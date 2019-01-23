@@ -804,7 +804,7 @@ class ContainerApiMixin(object):
                 datetime or integer epoch (in seconds)
 
         Returns:
-            (generator or str)
+            (generator iterator of output bytes or bytes)
 
         Raises:
             :py:class:`docker.errors.APIError`
