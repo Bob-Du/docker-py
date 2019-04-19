@@ -1080,14 +1080,19 @@ class KillTest(BaseAPIIntegrationTest):
 
 class PortTest(BaseAPIIntegrationTest):
     def test_port(self):
-
         port_bindings = {
             '1111': ('127.0.0.1', '4567'),
-            '2222': ('127.0.0.1', '4568')
+            '2222': ('127.0.0.1', '4568'),
+            '3333/udp': ('127.0.0.1', '4569'),
         }
+        ports = [
+            1111,
+            2222,
+            (3333, 'udp'),
+        ]
 
         container = self.client.create_container(
-            BUSYBOX, ['sleep', '60'], ports=list(port_bindings.keys()),
+            BUSYBOX, ['sleep', '60'], ports=ports,
             host_config=self.client.create_host_config(
                 port_bindings=port_bindings, network_mode='bridge'
             )
@@ -1098,13 +1103,15 @@ class PortTest(BaseAPIIntegrationTest):
 
         # Call the port function on each biding and compare expected vs actual
         for port in port_bindings:
+            port, _, protocol = port.partition('/')
             actual_bindings = self.client.port(container, port)
             port_binding = actual_bindings.pop()
 
             ip, host_port = port_binding['HostIp'], port_binding['HostPort']
 
-            assert ip == port_bindings[port][0]
-            assert host_port == port_bindings[port][1]
+            port_binding = port if not protocol else port + "/" + protocol
+            assert ip == port_bindings[port_binding][0]
+            assert host_port == port_bindings[port_binding][1]
 
         self.client.kill(id)
 
@@ -1262,14 +1269,14 @@ class AttachContainerTest(BaseAPIIntegrationTest):
                         reason='No cancellable streams over SSH')
     def test_attach_stream_and_cancel(self):
         container = self.client.create_container(
-            BUSYBOX, 'sh -c "echo hello && sleep 60"',
+            BUSYBOX, 'sh -c "sleep 2 && echo hello && sleep 60"',
             tty=True
         )
         self.tmp_containers.append(container)
         self.client.start(container)
         output = self.client.attach(container, stream=True, logs=True)
 
-        threading.Timer(1, output.close).start()
+        threading.Timer(3, output.close).start()
 
         lines = []
         for line in output:

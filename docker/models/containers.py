@@ -62,6 +62,13 @@ class Container(Model):
             return self.attrs['State']['Status']
         return self.attrs['State']
 
+    @property
+    def ports(self):
+        """
+        The ports that the container exposes as a dictionary.
+        """
+        return self.attrs.get('NetworkSettings', {}).get('Ports', {})
+
     def attach(self, **kwargs):
         """
         Attach to this container.
@@ -173,9 +180,10 @@ class Container(Model):
                 exit_code: (int):
                     Exit code for the executed command or ``None`` if
                     either ``stream```or ``socket`` is ``True``.
-                output: (generator or bytes):
+                output: (generator, bytes, or tuple):
                     If ``stream=True``, a generator yielding response chunks.
                     If ``socket=True``, a socket object for the connection.
+                    If ``demux=True``, a tuple of two bytes: stdout and stderr.
                     A bytestring containing response data otherwise.
 
         Raises:
@@ -649,8 +657,8 @@ class ContainerCollection(Collection):
 
                 The keys of the dictionary are the ports to bind inside the
                 container, either as an integer or a string in the form
-                ``port/protocol``, where the protocol is either ``tcp`` or
-                ``udp``.
+                ``port/protocol``, where the protocol is either ``tcp``,
+                ``udp``, or ``sctp``.
 
                 The values of the dictionary are the corresponding ports to
                 open on the host, which can be either:
@@ -727,7 +735,7 @@ class ContainerCollection(Collection):
             uts_mode (str): Sets the UTS namespace mode for the container.
                 Supported values are: ``host``
             version (str): The version of the API to use. Set to ``auto`` to
-                automatically detect the server's version. Default: ``1.30``
+                automatically detect the server's version. Default: ``1.35``
             volume_driver (str): The name of a volume driver/plugin.
             volumes (dict or list): A dictionary to configure volumes mounted
                 inside the container. The key is either the host path or a
@@ -963,7 +971,6 @@ RUN_CREATE_KWARGS = [
     'tty',
     'use_config_proxy',
     'user',
-    'volume_driver',
     'working_dir',
 ]
 
@@ -1027,6 +1034,7 @@ RUN_HOST_CONFIG_KWARGS = [
     'userns_mode',
     'uts_mode',
     'version',
+    'volume_driver',
     'volumes_from',
     'runtime'
 ]

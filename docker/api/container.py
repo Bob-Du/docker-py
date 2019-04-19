@@ -512,7 +512,7 @@ class ContainerApiMixin(object):
             network_mode (str): One of:
 
                 - ``bridge`` Create a new network stack for the container on
-                  on the bridge network.
+                  the bridge network.
                 - ``none`` No networking for this container.
                 - ``container:<name|id>`` Reuse another container's network
                   stack.
@@ -915,9 +915,10 @@ class ContainerApiMixin(object):
         if '/' in private_port:
             return port_settings.get(private_port)
 
-        h_ports = port_settings.get(private_port + '/tcp')
-        if h_ports is None:
-            h_ports = port_settings.get(private_port + '/udp')
+        for protocol in ['tcp', 'udp', 'sctp']:
+            h_ports = port_settings.get(private_port + '/' + protocol)
+            if h_ports:
+                break
 
         return h_ports
 
